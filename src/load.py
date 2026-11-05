@@ -2,6 +2,7 @@ import os #operating system
 
 from dotenv import load_dotenv  #reads .env files
 from sqlalchemy import create_engine, text #connects to sql
+import logging
 
 # Load environment variables from the .env file.
 load_dotenv()
@@ -38,4 +39,4 @@ def load_data(transit_data):
         connection.execute(text(query), records)
 
     # Display number of records processed
-    print(f"Successfully loaded {len(records)} records!")
+    logging.info(f"Successfully loaded {len(records)} records!")
