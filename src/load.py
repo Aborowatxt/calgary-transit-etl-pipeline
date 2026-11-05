@@ -1,27 +1,41 @@
-import os
+import os #operating system
 
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from dotenv import load_dotenv  #reads .env files
+from sqlalchemy import create_engine, text #connects to sql
 
 # Load environment variables from the .env file.
 load_dotenv()
 
 
 def load_data(transit_data):
-    # Retrieve the MySQL password from the environment.
     password = os.getenv("DB_PASSWORD")
 
-    # Create a connection to the Calgary Transit database.
+    #Configure connection to local MySQL database
     engine = create_engine(
         f"mysql+mysqlconnector://root:{password}@localhost:3306/calgary_transit"
     )
 
-    # Load the cleaned DataFrame into a MySQL table.
-    transit_data.to_sql(
-        name="transit_stops",
-        con=engine,
-        if_exists="replace",  # Replace the table if it already exists.
-        index=False,          # Don't save the pandas index as a column.
-    )
+    # Insert new stops or update existing stops based on their primary key
+    query = """
+        INSERT INTO transit_stops (
+            teleride_number, stop_name, status, longitude, latitude
+        )
+        VALUES (
+            :teleride_number, :stop_name, :status, :longitude, :latitude
+        )
+        ON DUPLICATE KEY UPDATE
+            stop_name = VALUES(stop_name),
+            status = VALUES(status),
+            longitude = VALUES(longitude),
+            latitude = VALUES(latitude)
+    """
 
-    print("Data loaded successfully!")
+    # Convert DataFrame rows into dictionaries for SQLAlchemy
+    records = transit_data.to_dict(orient="records")
+
+    # Execute upserts in a transaction
+    with engine.begin() as connection:
+        connection.execute(text(query), records)
+
+    # Display number of records processed
+    print(f"Successfully loaded {len(records)} records!")
