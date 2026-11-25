@@ -1,17 +1,40 @@
 from src.extract import extract_data
+from src.validate import validate_data
 from src.transform import transform_data
 from src.load import load_data
+import logging
+
+#Configure log messages
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 def main():
-    #Extracting original data from csv file
-    original_transit_data = extract_data("data/calgary_transit_stops.csv")
+    try:
+        # Extract
+        logging.info("Starting ETL pipeline")
+        original_data = extract_data("data/calgary_transit_stops.csv")
 
-    #Clean and make necessary changes to data
-    transformed_transit_data = transform_data(original_transit_data)
+        # Validate
+        accepted, rejected = validate_data(original_data)
 
-    #Load transformed data into MySQL
-    load_data(transformed_transit_data)
+        logging.info(f"Accepted records: {len(accepted)}")
+        logging.info(f"Rejected records: {len(rejected)}")
+
+        # Transform
+        transformed_data = transform_data(accepted)
+
+        # Load
+        load_data(transformed_data)
+
+        logging.info("ETL pipeline completed successfully")
+
+    except Exception:
+        logging.exception("ETL pipeline failed")
+        raise
+
 
 if __name__ == "__main__":
     main()
-    print("Data loaded")

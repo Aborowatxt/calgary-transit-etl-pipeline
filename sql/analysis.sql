@@ -26,3 +26,10 @@ FROM transit_stops
 WHERE status = 'ACTIVE'
 ORDER BY stop_name
 LIMIT 10;
+
+-- Calculate the percentage of active transit stops
+SELECT ROUND(
+    100.0 * SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END)
+    / NULLIF(COUNT(*), 0), 2
+) AS active_percentage
+FROM transit_stops;
